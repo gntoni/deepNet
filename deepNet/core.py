@@ -8,8 +8,10 @@ Author: Toni Gabas.  a.gabas@aist.go.jp
 """
 
 from __future__ import print_function
+from os import path
+from abc import ABCMeta, abstractmethod
 from tqdm import tqdm
-from sys import path
+from collections import OrderedDict
 
 import time
 import numpy as np
@@ -29,10 +31,12 @@ class deepNet(object):
     Attributes:
         trainParams (TYPE): Description
     """
+    __metaclass__ = ABCMeta
+
     def __init__(self, config):
             """Summary
             """
-            self._input_var = T.tensor4('inputs', dtype=theano.config.floatX)
+            # self._input_var = T.tensor4('inputs', dtype=theano.config.floatX)
             self._target_var = T.ivector('targets')
             self._network = cifar10Net.build_model()
 
@@ -46,6 +50,15 @@ class deepNet(object):
             }
             self.loadTrainParams(config)
             self.setTrainFuncs()
+
+    @abstractmethod
+    def setModel(self):
+        self._network = None
+
+        if not isinstance(self._network, OrderedDict):
+            raise AttributeError("Network model must be an OrderedDict")
+        self._inputLayer = self._network[self._network.keys()[0]]
+        self._outputLayer = self._network[self._network.keys()[-1]]
 
     def loadTrainParams(self, configFile):
             """
@@ -95,74 +108,61 @@ class deepNet(object):
                 print("Loaded new value for save_freq: {}"
                       .format(f["trainConfig"]["save_freq"]))
 
+    @abstractmethod
     def setTrainFuncs(self):
             """
             Set of functions to perform the traininig/validation of the data.
-            This function can be overridden in inherited classes to modify
+            This function must be overridden in inherited classes to modify
             the training behaviour
             
             """
-            # Create a loss expression for training, i.e., a scalar objective
-            # we want to minimize (for our multi-class problem, it is
-            # the cross-entropy loss):
-            print(type(self._network["output"]))
-            self._prediction = lasagne.layers.get_output(self._network["output"])
-            self._loss = lasagne.objectives.categorical_crossentropy(
-                                        self._prediction,
-                                        self._target_var
-                                        )
-            self._loss = self._loss.mean()
+            # Create a loss expression for training,
+            # i.e., a scalar objective
+            # (relative to the net output)
+            # we want to minimize (e.g. cross-entropy loss):
             # Could add some weight decay as well here,
             # see lasagne.regularization.
+            self._prediction = lasagne.layers.get_output(self._outputLayer)
+            self._loss = None
 
-            # Create update expressions for training, i.e., how to modify the
-            # parameters at each training step. Here, using Stochastic Gradient
-            # Descent (SGD) with Nesterov momentum,
+            # Create update expressions for training, 
+            # i.e., how to modify the
+            # parameters at each training step.
+            # (relative to the net params)
+            # see lasagne.updates
             self._params = lasagne.layers.get_all_params(
-                                                    self._network["output"],
+                                                    self._outputLayer,
                                                     trainable=True)
-            self._updates = lasagne.updates.nesterov_momentum(
-                            self._loss,
-                            self._params,
-                            learning_rate=self.trainParams["learning_rate"],
-                            momentum=self.trainParams["momentum"])
+            self._updates = None
 
             # Create a loss expression for validation/testing. The difference
             # here is that we do a deterministic forward pass through the
             # network, disabling dropout layers.
             self._test_prediction = lasagne.layers.get_output(
-                                            self._network["output"],
+                                            self._outputLayer,
                                             deterministic=True)
-            self._test_loss = lasagne.objectives.categorical_crossentropy(
-                                            self._test_prediction,
-                                            self._target_var)
-            self._test_loss = self._test_loss.mean()
+            self._test_loss = None
             # Also create an expression for the classification accuracy:
-            self._test_acc = T.mean(T.eq(
-                                                T.argmax(
-                                                      self._test_prediction,
-                                                      axis=1),
-                                                self._target_var),
-                                    dtype=theano.config.floatX)
+            self._test_acc = None
 
             # Compile a function performing a training step on a mini-batch
             # (by giving the updates dictionary) and returning
             # the corresponding training loss:
             self._train_fn = theano.function(
-                            [self._network["input"].input_var, self._target_var],
-                            self._loss,
-                            updates=self._updates)
+                [self._inputLayer.input_var, self._target_var],
+                self._loss,
+                updates=self._updates)
 
             # Compile a second function computing the validation loss
             # and accuracy:
             self._val_fn = theano.function(
-                [self._network["input"].input_var, self._target_var],
+                [self._inputLayer.input_var, self._target_var],
                 [self._test_loss, self._test_acc])
 
             # Compile one last function returning the prediction for
             # testing without labels available.
             self._pred_fn = theano.function(
-                [self._network["input"].input_var],
+                [self._inputLayer.input_var],
                 self._test_prediction)
             return
 
@@ -174,7 +174,7 @@ class deepNet(object):
             ndarray: weights array containing as many dimmensions
                     as layers in the current network.
         """
-        return lasagne.layers.get_all_param_values(self._network["output"])
+        return lasagne.layers.get_all_param_values(self._outputLayer)
 
     def set_network_params(self, model):
         """
@@ -277,11 +277,11 @@ class deepNet(object):
             # Save the model after a number of epochs
             if epoch % self.trainParams["save_freq"] == 0:
                     params = lasagne.layers.get_all_param_values(
-                        self._network["output"])
+                        self._outputLayer)
                     modelname = "model_" + str(epoch) + "_epoch"
                     np.save(
                             path.join(
-                                    self.trainParams["save_freq"],
+                                    self.trainParams["output_models_folder"],
                                     modelname),
                             params)
 
@@ -295,7 +295,7 @@ class deepNet(object):
         print("Final results:")
         print("  test loss:\t\t\t{:.6f}".format(test_err))
         print("  test accuracy:\t\t{:.2f} %".format(test_acc))
-        params = lasagne.layers.get_all_param_values(self._network["output"])
+        params = lasagne.layers.get_all_param_values(self._outputLayer)
         np.save("model", params)
 
     def test(self, X, y):
