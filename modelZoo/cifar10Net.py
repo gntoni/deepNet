@@ -5,6 +5,7 @@
 # Download pretrained weights from:
 # https://s3.amazonaws.com/lasagne/recipes/pretrained/cifar10/model.pkl
 
+from collections import OrderedDict
 from lasagne.layers import InputLayer, DropoutLayer, FlattenLayer
 from lasagne.layers import Pool2DLayer as PoolLayer
 
@@ -15,7 +16,7 @@ except ImportError:
 
 
 def build_model():
-    net = {}
+    net = OrderedDict()
     net['input'] = InputLayer((None, 3, 32, 32))
     net['conv1'] = ConvLayer(net['input'],
                              num_filters=192,
