@@ -37,7 +37,6 @@ class deepNet(object):
             """Summary
             """
             # self._input_var = T.tensor4('inputs', dtype=theano.config.floatX)
-            self._target_var = T.ivector('targets')
 
             self.trainParams = {
                 'learning_rate': None,
@@ -53,8 +52,9 @@ class deepNet(object):
 
     @abstractmethod
     def setModel(self):
+        self._target_var = None  # eg: T.ivector('targets')
         self._network = None
-        
+
         if not isinstance(self._network, OrderedDict):
             raise AttributeError("Network model must be an OrderedDict")
         self._inputLayer = self._network[self._network.keys()[0]]

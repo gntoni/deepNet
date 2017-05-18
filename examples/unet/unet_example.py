@@ -6,10 +6,12 @@ import lasagne
 import theano
 import theano.tensor as T
 
+from os import path
 from modelZoo import unetModel
 from collections import OrderedDict
 from deepNet.core import deepNet
-from os import path
+from deepNet.utils import iterate_minibatches
+from tqdm import tqdm
 
 
 def load_data(datapath, n_batches):
@@ -28,12 +30,58 @@ class unet(deepNet):
         deepNet.__init__(self, config)
 
     def setModel(self):
+        self._target_var = T.imatrix('targets')
         self._network = unetModel.build_model()
 
         if not isinstance(self._network, OrderedDict):
             raise AttributeError("Network model must be an OrderedDict")
         self._inputLayer = self._network[self._network.keys()[0]]
         self._outputLayer = self._network[self._network.keys()[-1]]
+
+    def _run_epoch(self, X, y, batchsize, training=False):
+        """
+        Function that takes a pair of input data and labels, splits i them
+        into minibatches and pass them through the network.
+        If training (training = True), parameters of the network will be
+        updated.
+        
+        Args:
+            X (ndarray): Input data
+            y (ndarray): Labels
+            batchsize (TYPE): Size of the desired minibatches
+            training (bool, optional): If true, updates of the network
+                    parameters with Stochastic Gradient descend will be
+                    performed after each iteration.
+        
+        Returns:
+            (float, float): Average Error and Average Accuracy
+                    When training only error is returned (Accuracy = None)
+        """
+        err = 0
+        acc = 0
+        batches = 0
+        for batch in tqdm(iterate_minibatches(
+                                              X,
+                                              y,
+                                              batchsize,
+                                              shuffle=training),
+                          total=len(X)/batchsize):
+            inputs, targets = batch
+            targets = targets.swapaxes(1, 0)
+            targets = targets.reshape((2, -1))
+            targets = targets.swapaxes(0, 1)
+
+            if training:
+                err += self._train_fn(inputs, targets)
+            else:
+                verr, vacc = self._val_fn(inputs, targets)
+                err += verr
+                acc += vacc
+            batches += 1
+        if training:
+            return (err/batches, None)
+        else:
+            return (err/batches, (acc/batches)*100)
 
     def setTrainFuncs(self):
             """
