@@ -163,9 +163,14 @@ def build_model():
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
-    net['output_segmentation'] = ConvLayer(net['dconv4_2'], 2, 1, nonlinearity=None)
-    net['dimshuffle'] = DimshuffleLayer(net['output_segmentation'], (1, 0, 2, 3))
+    net['output_segmentation'] = ConvLayer(net['dconv4_2'],
+                                           num_filters=2,
+                                           filter_size=1,
+                                           nonlinearity=None)
+    net['dimshuffle'] = DimshuffleLayer(net['output_segmentation'],
+                                        (1, 0, 2, 3))
     net['reshapeSeg'] = ReshapeLayer(net['dimshuffle'], (2, -1))
     net['dimshuffle2'] = DimshuffleLayer(net['reshapeSeg'], (1, 0))
-    net['output_flattened'] = NonlinearityLayer(net['dimshuffle2'], nonlinearity=softmax)
+    net['output_flattened'] = NonlinearityLayer(net['dimshuffle2'],
+                                                nonlinearity=softmax)
     return net

@@ -38,7 +38,6 @@ class deepNet(object):
             """
             # self._input_var = T.tensor4('inputs', dtype=theano.config.floatX)
             self._target_var = T.ivector('targets')
-            self._network = cifar10Net.build_model()
 
             self.trainParams = {
                 'learning_rate': None,
@@ -48,13 +47,14 @@ class deepNet(object):
                 'output_models_folder': "",
                 'save_freq': None  # save model every N epochs
             }
+            self.setModel()
             self.loadTrainParams(config)
             self.setTrainFuncs()
 
     @abstractmethod
     def setModel(self):
         self._network = None
-
+        
         if not isinstance(self._network, OrderedDict):
             raise AttributeError("Network model must be an OrderedDict")
         self._inputLayer = self._network[self._network.keys()[0]]
