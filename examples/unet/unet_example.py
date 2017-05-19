@@ -31,7 +31,7 @@ class unet(deepNet):
 
     def setModel(self):
         self._target_var = T.imatrix('targets')
-        self._network = unetModel.build_model()
+        self._network = unetModel.build_model(nBaseFilters=25)
 
         if not isinstance(self._network, OrderedDict):
             raise AttributeError("Network model must be an OrderedDict")
@@ -128,14 +128,11 @@ class unet(deepNet):
             self._test_loss = self._test_loss.mean()
 
             # Also create an expression for the classification accuracy:
-            self._test_acc = T.mean(T.eq(
-                                                T.argmax(
-                                                      self._test_prediction,
-                                                      axis=1),
-                                                self._target_var),
-                                    dtype=theano.config.floatX)
+            self._test_acc = lasagne.objectives.categorical_accuracy(
+                                            self._test_prediction,
+                                            self._target_var)
+            self._test_acc = self._test_acc.mean()
 
-            # Compile a function performing a training step on a mini-batch
             # (by giving the updates dictionary) and returning
             # the corresponding training loss:
             self._train_fn = theano.function(

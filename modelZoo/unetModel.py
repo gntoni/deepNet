@@ -14,16 +14,16 @@ except ImportError:
     from lasagne.layers import Conv2DLayer as ConvLayer
 
 
-def build_model():
+def build_model(nBaseFilters=64):
     net = OrderedDict()
     net['input'] = InputLayer((None, 1, 540, 960))
     net['econv1_1'] = ConvLayer(net['input'],
-                                num_filters=64,
+                                num_filters=nBaseFilters,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['econv1_2'] = ConvLayer(net['econv1_1'],
-                                num_filters=64,
+                                num_filters=nBaseFilters,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
@@ -33,12 +33,12 @@ def build_model():
                              ignore_border=False,
                              mode='max')
     net['econv2_1'] = ConvLayer(net['pool1'],
-                                num_filters=128,
+                                num_filters=nBaseFilters*2,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['econv2_2'] = ConvLayer(net['econv2_1'],
-                                num_filters=128,
+                                num_filters=nBaseFilters*2,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
@@ -48,12 +48,12 @@ def build_model():
                              ignore_border=False,
                              mode='max')
     net['econv3_1'] = ConvLayer(net['pool2'],
-                                num_filters=256,
+                                num_filters=nBaseFilters*4,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['econv3_2'] = ConvLayer(net['econv3_1'],
-                                num_filters=256,
+                                num_filters=nBaseFilters*4,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
@@ -63,12 +63,12 @@ def build_model():
                              ignore_border=False,
                              mode='max')
     net['econv4_1'] = ConvLayer(net['pool3'],
-                                num_filters=512,
+                                num_filters=nBaseFilters*8,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['econv4_2'] = ConvLayer(net['econv4_1'],
-                                num_filters=512,
+                                num_filters=nBaseFilters*8,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
@@ -78,17 +78,17 @@ def build_model():
                              ignore_border=False,
                              mode='max')
     net['econv5_1'] = ConvLayer(net['pool4'],
-                                num_filters=1024,
+                                num_filters=nBaseFilters*16,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['econv5_2'] = ConvLayer(net['econv5_1'],
-                                num_filters=1024,
+                                num_filters=nBaseFilters*16,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['upconv1'] = Deconv2DLayer(net['econv5_2'],
-                                   num_filters=512,
+                                   num_filters=nBaseFilters*8,
                                    filter_size=2,
                                    stride=2,
                                    crop="valid",
@@ -97,17 +97,17 @@ def build_model():
                             [net['upconv1'], net['econv4_2']],
                             cropping=(None, None, "center", "center"))
     net['dconv1_1'] = ConvLayer(net['concat1'],
-                                num_filters=512,
+                                num_filters=nBaseFilters*8,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['dconv1_2'] = ConvLayer(net['dconv1_1'],
-                                num_filters=512,
+                                num_filters=nBaseFilters*8,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['upconv2'] = Deconv2DLayer(net['dconv1_2'],
-                                   num_filters=256,
+                                   num_filters=nBaseFilters*4,
                                    filter_size=2,
                                    stride=2,
                                    crop="valid",
@@ -116,17 +116,17 @@ def build_model():
                             [net['upconv2'], net['econv3_2']],
                             cropping=(None, None, "center", "center"))
     net['dconv2_1'] = ConvLayer(net['concat2'],
-                                num_filters=256,
+                                num_filters=nBaseFilters*4,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['dconv2_2'] = ConvLayer(net['dconv2_1'],
-                                num_filters=256,
+                                num_filters=nBaseFilters*4,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['upconv3'] = Deconv2DLayer(net['dconv2_2'],
-                                   num_filters=128,
+                                   num_filters=nBaseFilters*2,
                                    filter_size=2,
                                    stride=2,
                                    crop="valid",
@@ -135,17 +135,17 @@ def build_model():
                             [net['upconv3'], net['econv2_2']],
                             cropping=(None, None, "center", "center"))
     net['dconv3_1'] = ConvLayer(net['concat3'],
-                                num_filters=128,
+                                num_filters=nBaseFilters*2,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['dconv3_2'] = ConvLayer(net['dconv3_1'],
-                                num_filters=128,
+                                num_filters=nBaseFilters*2,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['upconv4'] = Deconv2DLayer(net['dconv3_2'],
-                                   num_filters=64,
+                                   num_filters=nBaseFilters,
                                    filter_size=2,
                                    stride=2,
                                    crop="valid",
@@ -154,12 +154,12 @@ def build_model():
                             [net['upconv4'], net['econv1_2']],
                             cropping=(None, None, "center", "center"))
     net['dconv4_1'] = ConvLayer(net['concat4'],
-                                num_filters=64,
+                                num_filters=nBaseFilters,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)
     net['dconv4_2'] = ConvLayer(net['dconv4_1'],
-                                num_filters=64,
+                                num_filters=nBaseFilters,
                                 filter_size=3,
                                 pad='same',
                                 nonlinearity=ReLU)

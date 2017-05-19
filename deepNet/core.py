@@ -272,7 +272,7 @@ class deepNet(object):
                 epoch + 1, num_epochs, time.time() - start_time))
             print("  training loss:\t\t{:.6f}".format(train_err))
             print("  validation loss:\t\t{:.6f}".format(val_err))
-            print("  validation accuracy:\t\t{:.2f} %".format(val_acc))
+            print("  validation accuracy:\t\t{:.2f} %".format(float(val_acc)))
 
             # Save the model after a number of epochs
             if epoch % self.trainParams["save_freq"] == 0:
