@@ -30,8 +30,8 @@ class unet(deepNet):
         deepNet.__init__(self, config)
 
     def setModel(self):
-        self._target_var = T.imatrix('targets')
-        self._network = unetModel.build_model(nBaseFilters=25)
+        self._target_var = T.dmatrix('targets')
+        self._network = unetModel.build_model(nBaseFilters=10)
 
         if not isinstance(self._network, OrderedDict):
             raise AttributeError("Network model must be an OrderedDict")
@@ -70,6 +70,8 @@ class unet(deepNet):
             targets = targets.swapaxes(1, 0)
             targets = targets.reshape((2, -1))
             targets = targets.swapaxes(0, 1)
+            inputs = np.asarray(inputs, dtype=theano.config.floatX)
+            targets = np.asarray(targets, dtype=theano.config.floatX)
 
             if training:
                 err += self._train_fn(inputs, targets)
