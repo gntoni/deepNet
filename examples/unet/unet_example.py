@@ -70,6 +70,8 @@ class unet(deepNet):
             targets = targets.swapaxes(1, 0)
             targets = targets.reshape((2, -1))
             targets = targets.swapaxes(0, 1)
+            inputs = np.asarray(inputs, dtype=theano.config.floatX)
+            targets = np.asarray(targets, dtype=theano.config.floatX)
 
             if training:
                 err += self._train_fn(inputs, targets)
