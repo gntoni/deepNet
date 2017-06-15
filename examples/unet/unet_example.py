@@ -5,8 +5,10 @@ import cPickle
 import lasagne
 import theano
 import theano.tensor as T
+import xmltodict
 
 from os import path
+from sys import argv
 from modelZoo import unetModel
 from collections import OrderedDict
 from deepNet.core import deepNet
@@ -29,9 +31,29 @@ class unet(deepNet):
     def __init__(self, config):
         deepNet.__init__(self, config)
 
+    def loadTrainParams(self, configFile):
+        deepNet.loadTrainParams(self, configFile)
+        with open(configFile) as fd:
+             f = xmltodict.parse(fd.read())
+             if "nBaseFilters" in f["trainConfig"]:
+                 self.trainParams["nBaseFilters"] = int(
+                                 f["trainConfig"]["nBaseFilters"])
+                 print("Loaded new value for nBaseFilters: {}"
+                     .format(f["trainConfig"]["nBaseFilters"]))
+             if "fs1" in f["trainConfig"]:
+                 self.trainParams["fs1"] = int(
+                                 f["trainConfig"]["fs1"])
+                 print("Loaded new value for filter size 1: {}"
+                     .format(f["trainConfig"]["fs1"]))
+             if "fs2" in f["trainConfig"]:
+                 self.trainParams["fs2"] = int(
+                                 f["trainConfig"]["fs2"])
+                 print("Loaded new value for filter size 2: {}"
+                     .format(f["trainConfig"]["fs2"]))
+
     def setModel(self):
         self._target_var = T.dmatrix('targets')
-        self._network = unetModel.build_model(nBaseFilters=10)
+        self._network = unetModel.build_model(nBaseFilters=self.trainParams["nBaseFilters"],fs1=self.trainParams["fs1"], fs2=self.trainParams["fs2"])
 
         if not isinstance(self._network, OrderedDict):
             raise AttributeError("Network model must be an OrderedDict")
@@ -154,3 +176,33 @@ class unet(deepNet):
                 [self._inputLayer.input_var],
                 self._test_prediction)
             return
+
+
+if __name__ == '__main__':
+    assert len(argv) >= 6
+   
+    if path.isfile(argv[1]):
+        trainConfPath = argv[1]
+    else:
+        raise AttributeError("trainConfPath Parameter is not a file")
+
+    if path.isfile(argv[2]):
+        inputsPath = argv[2]
+    else: 
+        raise AttributeError("inputsPath Parameter is not a file")
+
+    if path.isfile(argv[3]):
+        labelsPath = argv[3]
+    else:
+        raise AttributeError("labelsPath Parameter is not a file")
+    cut1 = int(argv[4])
+    cut2 = int(argv[5])
+
+    classifier = unet(trainConfPath)
+    if len(argv)==7:
+        model = np.load(argv[6])
+        classifier.set_network_params(model)
+        print "Loaded pre-trained model from file"
+    x = np.load(inputsPath)
+    y = np.load(labelsPath)
+    classifier.train(x[:cut1],y[:cut1],x[cut1:cut2],y[cut1:cut2],x[cut2:],y[cut2:])

@@ -14,19 +14,19 @@ except ImportError:
     from lasagne.layers import Conv2DLayer as ConvLayer
 
 
-def build_model(nBaseFilters=64):
+def build_model(nBaseFilters=64,fs1=3,fs2=3):
     net = OrderedDict()
     net['input'] = InputLayer((None, 1, 540, 960))
     net['econv1_1'] = batch_norm(
                                 ConvLayer(net['input'],
                                           num_filters=nBaseFilters,
-                                          filter_size=3,
+                                          filter_size=fs1,
                                           pad='same',
                                           nonlinearity=ReLU))
     net['econv1_2'] = batch_norm(
                                 ConvLayer(net['econv1_1'],
                                           num_filters=nBaseFilters,
-                                          filter_size=3,
+                                          filter_size=fs2,
                                           pad='same',
                                           nonlinearity=ReLU))
     net['pool1'] = PoolLayer(net['econv1_2'],

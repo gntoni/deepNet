@@ -46,8 +46,8 @@ class deepNet(object):
                 'output_models_folder': "",
                 'save_freq': None  # save model every N epochs
             }
-            self.setModel()
             self.loadTrainParams(config)
+            self.setModel()
             self.setTrainFuncs()
 
     @abstractmethod
@@ -184,7 +184,7 @@ class deepNet(object):
             model (ndarray): weights array containing as many
                     dimmensions as layers in the network.
         """
-        lasagne.layers.set_all_param_values(self._network, model)
+        lasagne.layers.set_all_param_values(self._outputLayer, model)
         return
 
     def _run_epoch(self, X, y, batchsize, training=False):
