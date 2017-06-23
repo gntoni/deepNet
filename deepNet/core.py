@@ -16,11 +16,9 @@ from collections import OrderedDict
 import time
 import numpy as np
 import theano
-import theano.tensor as T
 import lasagne
 import xmltodict
 
-from modelZoo import cifar10Net
 from utils import iterate_minibatches
 
 
@@ -216,6 +214,9 @@ class deepNet(object):
                                               shuffle=training),
                           total=len(X)/batchsize):
             inputs, targets = batch
+            inputs = np.asarray(inputs)
+            targets = np.asarray(targets)
+            
             if training:
                 err += self._train_fn(inputs, targets)
             else:
